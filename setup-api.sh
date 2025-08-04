@@ -2,11 +2,12 @@
 
 #Variaveis de Ambiente + Github
 GITHUB_REPO_URL="https://github.com/analaura-gb/TVBox.git"
-PROJECT_DIR="/home/$USER"
+PROJECT_DIR="/home/$USER/TVBox"
 BRANCH="main"
 
 #Atualização de Pacotes + Instalação do Node
 sudo apt update
+sudo apt remove nodejs -y
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt install -y nodejs git
 
