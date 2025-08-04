@@ -7,9 +7,21 @@ BRANCH="main"
 
 #Atualização de Pacotes + Instalação do Node
 sudo apt update
-sudo apt remove nodejs -y
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt install -y nodejs git
+REQUIRED_NODE_MAJOR=18
+
+if ! command -v node &> /dev/null; then
+  curl -fsSL https://deb.nodesource.com/setup_${REQUIRED_NODE_MAJOR}.x | sudo -E bash -
+  sudo apt install -y nodejs
+else
+  CURRENT_NODE_MAJOR=$(node -v | grep -oP '(?<=v)\d+')
+  if [ "$CURRENT_NODE_MAJOR" -lt "$REQUIRED_NODE_MAJOR" ]; then
+    sudo apt remove -y nodejs
+    curl -fsSL https://deb.nodesource.com/setup_${REQUIRED_NODE_MAJOR}.x | sudo -E bash -
+    sudo apt install -y nodejs
+  else
+    echo "Node.js v$CURRENT_NODE_MAJOR já está instalado. Nenhuma ação necessária."
+  fi
+fi
 
 #Clone ou atualização do repositório
 if [ ! -d "$PROJECT_DIR/.git" ]; then
