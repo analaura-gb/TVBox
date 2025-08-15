@@ -1,12 +1,18 @@
+require('dotenv').config();
 const express = require('express');
-const app = express();
+const http = require('http');
 const statusRoutes = require('./routes/status.routes');
+const setupSocketIO = require('./realtime/socket');
+
+const app = express();
 
 app.use('/api/status', statusRoutes);
 
-require('dotenv').config();
-
 const PORT = process.env.PORT;
-app.listen(PORT, () => {
-  console.log(`API running on port ${PORT}`);
+const server = http.createServer(app);
+
+setupSocketIO(server);
+
+server.listen(PORT, () => {
+  console.log(`API + WebSocket rodando na porta ${PORT}`);
 });
