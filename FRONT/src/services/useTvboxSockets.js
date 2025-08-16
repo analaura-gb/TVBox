@@ -15,6 +15,7 @@ export default function useTvboxSockets() {
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionAttempts: Infinity,
+        query: { role: 'admin' },
       });
 
       socketsRef.current[box.baseUrl] = socket;

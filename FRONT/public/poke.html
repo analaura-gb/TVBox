@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+  <head><meta charset="utf-8"><title>Poke WS</title></head>
+  <body>
+    <h1>Client user</h1>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+      // conecta no Nginx (mesmo host do front, rota padrão)
+      const socket = io('/', {
+        transports: ['websocket'],
+        query: { role: 'user' } // <— conta como visitante
+      });
+      socket.on('connect', () => console.log('connected', socket.id));
+      socket.on('metrics', m => console.log('metrics', m.boxId));
+    </script>
+  </body>
+</html>

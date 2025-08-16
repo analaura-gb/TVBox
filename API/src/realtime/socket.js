@@ -40,18 +40,44 @@ module.exports = function setupSocketIO(server) {
     transports: ['websocket', 'polling'],
   });
 
-  let connected = 0;
+  const counters = {
+    total: 0,
+    byRole: { user: 0, admin: 0, other: 0 },
+  };
+
+  function normalizeRole(q) {
+    let r = q?.role;
+    if (Array.isArray(r)) r = r[0];
+    r = (r || 'user').toString().toLowerCase();
+    if (r !== 'user' && r !== 'admin') r = 'user';
+    return r;
+  }
+
+  const BROADCAST_MS = 2000;
+  setInterval(() => {
+    const metrics = buildMetrics();
+    io.emit('metrics', {
+      ...metrics,
+      wsClients: counters.total,            
+      wsUsers: counters.byRole.user || 0,  
+    });
+  }, BROADCAST_MS);
 
   io.on('connection', (socket) => {
-    connected++;
-    const send = () => socket.emit('metrics', { ...buildMetrics(), wsClients: connected });
-    send();
+    const role = normalizeRole(socket.handshake.query);
 
-    const timer = setInterval(send, 2000);
+    counters.total += 1;
+    counters.byRole[role] = (counters.byRole[role] || 0) + 1;
+    
+    socket.emit('metrics', {
+      ...buildMetrics(),
+      wsClients: counters.total,
+      wsUsers: counters.byRole.user || 0,
+    });
 
     socket.on('disconnect', () => {
-      clearInterval(timer);
-      connected--;
+      counters.total = Math.max(0, counters.total - 1);
+      counters.byRole[role] = Math.max(0, (counters.byRole[role] || 1) - 1);
     });
   });
 
