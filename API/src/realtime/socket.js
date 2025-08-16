@@ -36,9 +36,12 @@ module.exports = function setupSocketIO(server) {
   const { Server } = require('socket.io');
 
   const io = new Server(server, {
-    cors: { origin: '*', methods: ['GET', 'POST'] },
-    transports: ['websocket', 'polling'],
-  });
+  cors: { origin: '*', methods: ['GET', 'POST'] },
+  transports: ['websocket'],  
+  pingInterval: 25000,           
+  pingTimeout: 60000,
+  maxHttpBufferSize: 1e6,
+});
 
   const counters = {
     total: 0,
@@ -53,7 +56,7 @@ module.exports = function setupSocketIO(server) {
     return r;
   }
 
-  const BROADCAST_MS = 2000;
+  const BROADCAST_MS = 3000;
   setInterval(() => {
     const metrics = buildMetrics();
     io.emit('metrics', {

@@ -166,7 +166,7 @@ export default function TVBoxDetails() {
                   <> ({status.mem.usedPercent.toFixed(1)}%)</>
                 )}
               </p>
-              {status?.wsClients != null && <p>Usuários conectados: {status.wsClients}</p>}
+              {status?.wsUsers != null && <p>Usuários conectados: {status.wsClients}</p>}
             </div>
           </div>
 

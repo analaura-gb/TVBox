@@ -29,7 +29,7 @@ export default function Dashboard() {
                 id: meta.id,
                 name: meta.name,
                 status: online ? 'online' : 'offline',
-                users: d?.wsClients ?? 0,
+                users: d?.wsUsers ?? 0,
                 cpu: cpuText,
                 memory: memText,
                 ip: d?.ip ?? '—',
