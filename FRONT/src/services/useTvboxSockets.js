@@ -3,7 +3,7 @@ import { io } from 'socket.io-client';
 import { tvboxes } from './tvboxes';
 
 export default function useTvboxSockets() {
-  const [data, setData] = useState([]); 
+  const [byId, setById] = useState({}); 
   const socketsRef = useRef({});       
 
   useEffect(() => {
@@ -23,17 +23,17 @@ export default function useTvboxSockets() {
       });
 
       socket.on('metrics', (payload) => {
-        setData((prev) => {
-          const others = prev.filter(p => (p.baseUrl || '') !== box.baseUrl);
-          return [...others, { ...payload, baseUrl: box.baseUrl }];
-        });
+        setById((prev) => ({
+          ...prev,
+          [box.id]: { ...payload, baseUrl: box.baseUrl }, // chave pela TVBox
+        }));
       });
 
       socket.on('disconnect', () => {
-        setData((prev) => {
-          const others = prev.filter(p => (p.baseUrl || '') !== box.baseUrl);
-          return [...others, { boxId: box.id, name: box.name, baseUrl: box.baseUrl, error: true }];
-        });
+        setById((prev) => ({
+          ...prev,
+          [box.id]: { ...(prev[box.id] || {}), error: true },
+        }));
       });
     });
 
@@ -43,5 +43,5 @@ export default function useTvboxSockets() {
     };
   }, []);
 
-  return data;
+  return byId;
 }

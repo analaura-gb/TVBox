@@ -1,8 +1,9 @@
 import TVBoxCard from '../components/TVBoxCard';
 import useTvboxSockets from '../services/useTvboxSockets';
+import { tvboxes } from '../services/tvboxes';
 
 export default function Dashboard() {
-  const items = useTvboxSockets();
+  const byId = useTvboxSockets();
 
   return (
     <div className="w-full min-h-screen px-8 py-4 bg-black text-white">
@@ -11,24 +12,27 @@ export default function Dashboard() {
       </h1>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-6">
-        {items.map((box) => {
-          const online = !box.error;
-          const cpuText = box.cpuLoad ? `${(box.cpuLoad[0] * 100).toFixed(1)}%` : '—';
-          const memText = box.mem
-            ? `${(((box.mem.total - box.mem.free) / 1024) / 1024).toFixed(0)}MB`
+        {tvboxes.map((meta) => {
+          const d = byId[meta.id];              // dados da box (se houver)
+          const online = d && !d.error;
+          const cpuText = d?.cpuLoad
+            ? `${(d.cpuLoad[0] * 100).toFixed(1)}%`
+            : '—';
+          const memText = d?.mem
+            ? `${(((d.mem.total - d.mem.free) / 1024) / 1024).toFixed(0)}MB`
             : '—';
 
           return (
             <TVBoxCard
-              key={box.boxId || box.baseUrl}
+              key={meta.id}
               box={{
-                id: box.boxId,
-                name: box.name,
+                id: meta.id,
+                name: meta.name,
                 status: online ? 'online' : 'offline',
-                users: box.wsClients ?? 0,
+                users: d?.wsClients ?? 0,
                 cpu: cpuText,
                 memory: memText,
-                ip: box.ip || '—',
+                ip: d?.ip ?? '—',
               }}
             />
           );
