@@ -1,13 +1,14 @@
 const statusService = require('../services/status.service');
 
-const getStatus = async (req, res) => {
+async function getStatus(req, res) {
   try {
-    const data = await statusService.getStatus();
+    //query instantanea
+    const instant = req.query.instant === '1';
+    const data = await statusService.getStatus({ instant });
     res.json(data);
-  } catch (err) {
-    console.error('Erro /api/status:', err);
+  } catch (e) {
+    console.error('Erro /api/status', e);
     res.status(500).json({ error: 'internal_error' });
   }
-};
-
+}
 module.exports = { getStatus };

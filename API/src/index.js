@@ -1,18 +1,17 @@
-require('dotenv').config();
-const express = require('express');
-const http = require('http');
-const statusRoutes = require('./routes/status.routes');
-const setupSocketIO = require('./realtime/socket');
+require('dotenv').config(); 
+const http = require('http'); 
+const app = require('./app'); 
+const setupSocketIO = require('./realtime/socket'); 
+const cfg = require('./config/env');
 
-const app = express();
+const server = http.createServer(app); //Servidor HTTP com o APP
+setupSocketIO(server); //Inicialização do socket.io
 
-app.use('/api/status', statusRoutes);
-
-const PORT = process.env.PORT;
-const server = http.createServer(app);
-
-setupSocketIO(server);
-
-server.listen(PORT, () => {
-  console.log(`API + WebSocket rodando na porta ${PORT}`);
+//Servidor iniciado 
+server.listen(cfg.PORT, () => {
+  console.log(`API + WebSocket rodando na porta ${cfg.PORT} | ${cfg.BOX_ID} - ${cfg.BOX_NAME}`);
 });
+
+//Cpatura de erros
+process.on('uncaughtException', (e) => console.error('uncaught', e));
+process.on('unhandledRejection', (e) => console.error('unhandled', e));

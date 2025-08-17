@@ -13,9 +13,11 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-6">
         {tvboxes.map((meta) => {
-          const d = byId[meta.id];              // dados da box (se houver)
+          const d = byId[meta.id];         
           const online = d && !d.error;
-          const cpuText = d?.cpuLoad
+          const cpuText = (typeof d?.cpuPercent === 'number')
+          ? `${d.cpuPercent.toFixed(1)}%`
+          : (Array.isArray(d?.cpuLoad) && d.cpuLoad.length > 0)
             ? `${(d.cpuLoad[0] * 100).toFixed(1)}%`
             : '—';
           const memText = d?.mem

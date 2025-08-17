@@ -19,5 +19,5 @@ export const tvboxes = [
   { id: 'tvbox-18', name: 'TVBox 18', baseUrl: 'http://192.168.0.122:3000' },
   { id: 'tvbox-19', name: 'TVBox 19', baseUrl: 'http://192.168.0.123:3000' },
   { id: 'tvbox-20', name: 'TVBox 20', baseUrl: 'http://192.168.0.124:3000' },
-  //{ id: 'tvbox-21', name: 'TVBox 21', baseUrl: 'http://192.168.0.125:3000' },
+  { id: 'tvbox-21', name: 'TVBox 21', baseUrl: 'http://192.168.0.125:3000' },
 ];

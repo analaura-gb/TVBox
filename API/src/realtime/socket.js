@@ -1,88 +1,69 @@
-const os = require('os');
+const { Server } = require('socket.io');
+const { startSampler } = require('../metrics/cpuInstant');
+const { buildMetrics } = require('../metrics/metrics');
 
-function getPrimaryIPv4() {
-  const ifaces = os.networkInterfaces();
-  for (const name of Object.keys(ifaces)) {
-    for (const i of ifaces[name]) {
-      if (i.family === 'IPv4' && !i.internal) return i.address;
-    }
-  }
-  return null;
-}
-
-function buildMetrics() {
-  const total = os.totalmem();
-  const free = os.freemem();
-  const usedPercent = ((total - free) / total) * 100;
-
-  return {
-    boxId: (process.env.BOX_ID || os.hostname()).trim(),
-    name: (process.env.BOX_NAME || `TVBox ${os.hostname()}`).trim(),
-    hostname: os.hostname(),
-    ip: getPrimaryIPv4(),
-    uptimeSec: os.uptime(),
-    cpuLoad: os.loadavg(),
-    mem: {
-      total,
-      free,
-      usedPercent: Number(usedPercent.toFixed(2)),
-    },
-    platform: os.platform(),
-    timestamp: Date.now(),
-  };
+function normalizeRole(q) {
+  let r = q?.role;
+  if (Array.isArray(r)) r = r[0];
+  r = (r || 'user').toString().toLowerCase();
+  return (r === 'admin' || r === 'user') ? r : 'user';
 }
 
 module.exports = function setupSocketIO(server) {
-  const { Server } = require('socket.io');
-
   const io = new Server(server, {
-  cors: { origin: '*', methods: ['GET', 'POST'] },
-  transports: ['websocket'],  
-  pingInterval: 25000,           
-  pingTimeout: 60000,
-  maxHttpBufferSize: 1e6,
-});
+    cors: { origin: '*', methods: ['GET', 'POST'] },
+    transports: ['websocket', 'polling'],
+    pingInterval: 25_000,
+    pingTimeout: 60_000,
+    maxHttpBufferSize: 1e6,
+  });
 
-  const counters = {
-    total: 0,
-    byRole: { user: 0, admin: 0, other: 0 },
-  };
+  const counters = { total: 0, byRole: { user: 0, admin: 0 } };
 
-  function normalizeRole(q) {
-    let r = q?.role;
-    if (Array.isArray(r)) r = r[0];
-    r = (r || 'user').toString().toLowerCase();
-    if (r !== 'user' && r !== 'admin') r = 'user';
-    return r;
-  }
+  const sampler = startSampler(1000, 250);
 
   const BROADCAST_MS = 3000;
-  setInterval(() => {
-    const metrics = buildMetrics();
-    io.emit('metrics', {
-      ...metrics,
-      wsClients: counters.total,            
-      wsUsers: counters.byRole.user || 0,  
-    });
+  const broadcastTimer = setInterval(async () => {
+    try {
+      const base = await buildMetrics({ withInstant: false }); 
+      const instant = sampler.get(); 
+
+      io.emit('metrics', {
+        ...base,
+        cpuPercent: instant.cpuPercent ?? null,
+        wsClients: counters.total,
+        wsUsers: counters.byRole.user || 0,
+      });
+    } catch (err) {
+      console.debug('broadcast error', err);
+    }
   }, BROADCAST_MS);
+  broadcastTimer.unref();
 
-  io.on('connection', (socket) => {
+  io.on('connection', async (socket) => {
     const role = normalizeRole(socket.handshake.query);
-
     counters.total += 1;
     counters.byRole[role] = (counters.byRole[role] || 0) + 1;
-    
-    socket.emit('metrics', {
-      ...buildMetrics(),
-      wsClients: counters.total,
-      wsUsers: counters.byRole.user || 0,
-    });
+
+    try {
+      const base = await buildMetrics({ withInstant: false });
+      const instant = sampler.get();
+
+      socket.emit('metrics', {
+        ...base,
+        cpuPercent: instant.cpuPercent ?? null,
+        wsClients: counters.total,
+        wsUsers: counters.byRole.user || 0,
+      });
+    } catch (_) {}
 
     socket.on('disconnect', () => {
       counters.total = Math.max(0, counters.total - 1);
       counters.byRole[role] = Math.max(0, (counters.byRole[role] || 1) - 1);
     });
   });
+
+  io.on('close', () => clearInterval(broadcastTimer));
 
   return io;
 };

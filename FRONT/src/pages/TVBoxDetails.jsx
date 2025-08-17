@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { tvboxes } from "../services/tvboxes";
-import axios from "axios";
 import { io } from "socket.io-client";
+import { getStatus } from "../services/api";
 import TimeSeriesChart from "../components/TimeSeriesChart";
 
 function fmtUptime(sec = 0) {
@@ -46,12 +46,14 @@ export default function TVBoxDetails() {
 
   useEffect(() => {
     if (!meta) return;
+    const ac = new AbortController();
     let mounted = true;
 
     (async () => {
       try {
         setLoading(true);
-        const { data } = await axios.get(`${meta.baseUrl}/api/status`, { timeout: 3000 });
+        const data = await getStatus(meta.baseUrl, { instant: true, signal: ac.signal });
+
         if (!mounted) return;
         setStatus(data);
         setOnline(true);
@@ -69,7 +71,10 @@ export default function TVBoxDetails() {
       }
     })();
 
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+      ac.abort();
+    };
   }, [meta]);
 
   useEffect(() => {
@@ -78,11 +83,13 @@ export default function TVBoxDetails() {
       socketRef.current.close();
       socketRef.current = null;
     }
+
     const s = io(meta.baseUrl, {
       transports: ["websocket"],
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
+      query: { role: "admin" },                 
     });
     socketRef.current = s;
 
@@ -166,7 +173,7 @@ export default function TVBoxDetails() {
                   <> ({status.mem.usedPercent.toFixed(1)}%)</>
                 )}
               </p>
-              {status?.wsUsers != null && <p>Usuários conectados: {status.wsClients}</p>}
+              {status?.wsUsers != null && <p>Usuários conectados: {status.wsUsers}</p>}
             </div>
           </div>
 

@@ -1,15 +1,13 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
-import TVBoxDetails from "./pages/TVBoxDetails";
+import TVBoxDetails from './pages/TVBoxDetails';
 
-function App() {
-
+export default function App() {
   return (
-    <Routes className="min-h-screen bg-gray-900 text-white">
+    <Routes>
       <Route path="/" element={<Dashboard />} />
       <Route path="/tvbox/:id" element={<TVBoxDetails />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-  )
+  );
 }
-
-export default App
